@@ -2,24 +2,33 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import BannerCard from './BannerCard';
+import { useAuth } from '@/contexts/AuthContext';
+
 
 interface BannerGridProps {
     projectId?: string;
 }
 
 const BannerGrid: React.FC<BannerGridProps> = ({ projectId }) => {
+    const { userId } = useAuth();
     const { data: banners, isLoading, refetch } = useQuery({
-        queryKey: ['banners', projectId],
+        queryKey: ['banners', projectId, userId],
         queryFn: async () => {
-            let query = supabase.from('generated_banners').select('*');
+            let query = supabase.from('generated_banners').select('*, projects!inner(user_id)');
+
             if (projectId) {
                 query = query.eq('project_id', projectId);
+            } else if (userId) {
+                query = query.eq('projects.user_id', userId);
             }
+
             const { data, error } = await query.order('created_at', { ascending: false });
             if (error) throw error;
             return data;
         },
+        enabled: !!(projectId || userId),
     });
+
 
     if (isLoading) return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3].map(i => <div key={i} className="aspect-video bg-muted animate-pulse rounded-lg" />)}

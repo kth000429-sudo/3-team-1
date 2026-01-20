@@ -14,6 +14,9 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface Asset {
     id: string;
@@ -70,6 +73,41 @@ const AssetTable: React.FC<{ data: Asset[] }> = ({ data }) => {
                     {info.getValue()}
                 </Badge>
             ),
+        }),
+        columnHelper.display({
+            id: 'actions',
+            header: 'Actions',
+            cell: info => {
+                const asset = info.row.original;
+                const handleDownload = async () => {
+                    try {
+                        const { data: fileData, error } = await supabase.storage
+                            .from('banners')
+                            .download(asset.image_url);
+
+                        if (error) throw error;
+
+                        const url = URL.createObjectURL(fileData);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `banner-${asset.id.split('-')[0]}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    } catch (error) {
+                        console.error('Download failed:', error);
+                        alert('Failed to download image.');
+                    }
+                };
+
+                return (
+                    <Button variant="ghost" size="sm" onClick={handleDownload}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                    </Button>
+                );
+            },
         }),
     ], []);
 

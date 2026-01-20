@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useBannerGenerator } from '@/hooks/useBannerGenerator';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+
 
 const formSchema = z.object({
     guideline: z.any().refine((file) => file instanceof File, "Guideline file is required"),
@@ -20,10 +22,12 @@ type FormValues = z.infer<typeof formSchema>;
 
 const InputForm = () => {
     const navigate = useNavigate();
+    const { userId } = useAuth();
     const { generateBanner, isGenerating } = useBannerGenerator();
     const { setValue, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(formSchema),
     });
+
 
     const onSubmit = async (data: FormValues) => {
         try {
@@ -53,9 +57,11 @@ const InputForm = () => {
                     copy_text_url: copyPath,
                     template_url: templatePath,
                     reference_image_url: referencePath,
+                    user_id: userId,
                 })
                 .select()
                 .single();
+
 
             if (projectError) throw projectError;
 

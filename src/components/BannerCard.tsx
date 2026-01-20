@@ -2,6 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Download } from 'lucide-react';
+
 import { supabase } from '@/lib/supabase';
 
 interface BannerCardProps {
@@ -25,6 +27,29 @@ const BannerCard: React.FC<BannerCardProps> = ({ id, imageUrl, metadata, status,
             onStatusChange();
         }
     };
+
+    const handleDownload = async () => {
+        try {
+            const { data, error } = await supabase.storage
+                .from('banners')
+                .download(imageUrl);
+
+            if (error) throw error;
+
+            const url = URL.createObjectURL(data);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `banner-${id.split('-')[0]}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Failed to download image.');
+        }
+    };
+
 
     return (
         <Card className="overflow-hidden group">
@@ -68,7 +93,17 @@ const BannerCard: React.FC<BannerCardProps> = ({ id, imageUrl, metadata, status,
                 >
                     Reject
                 </Button>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className="px-2"
+                    title="Download"
+                    onClick={handleDownload}
+                >
+                    <Download className="w-4 h-4" />
+                </Button>
             </CardFooter>
+
         </Card>
     );
 };

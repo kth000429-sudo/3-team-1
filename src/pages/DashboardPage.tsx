@@ -3,23 +3,32 @@ import { supabase } from '@/lib/supabase';
 import AssetTable from '@/components/AssetTable';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const DashboardPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const { userId } = useAuth();
 
     const { data: assets, isLoading } = useQuery({
-        queryKey: ['assets'],
+        queryKey: ['assets', userId],
         queryFn: async () => {
+            if (!userId) return [];
             const { data, error } = await supabase
                 .from('generated_banners')
-                .select('*')
+                .select('*, projects!inner(user_id)')
+                .eq('projects.user_id', userId)
                 .eq('status', 'approved')
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Fetch error:', error);
+                throw error;
+            }
             return data;
         },
+        enabled: !!userId,
     });
+
 
     const filteredAssets = assets?.filter(asset =>
         asset.metadata?.font?.toLowerCase().includes(searchTerm.toLowerCase()) ||
